@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.zepben.maven</groupId>
         <artifactId>evolve-super-pom</artifactId>
-        <version>0.3.0</version>
+        <version>0.3.3</version>
     </parent>
 
     <groupId>com.zepben</groupId>
@@ -15,7 +15,7 @@
     <packaging>jar</packaging>
 
     <name>${project.groupId}:${project.artifactId}</name>
-    <description>Library implementing a basic Blob store</description>
+    <description>Library implementing a basic blob store</description>
     <url>https://github.com/zepben/blob-store/</url>
     <organization>
         <name>Zeppelin Bend Pty Ltd.</name>
