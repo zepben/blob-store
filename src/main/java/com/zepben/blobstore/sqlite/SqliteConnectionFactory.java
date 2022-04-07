@@ -8,12 +8,15 @@
 
 package com.zepben.blobstore.sqlite;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import com.zepben.annotations.EverythingIsNonnullByDefault;
 
 import java.nio.file.Path;
-import java.sql.*;
-import java.util.Collections;
-import java.util.HashSet;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Set;
 
 /**
@@ -27,6 +30,7 @@ public class SqliteConnectionFactory implements ConnectionFactory {
 
     private final Set<String> tags;
     private final Path file;
+    private final HikariDataSource dbSource;
 
     @SuppressWarnings("WeakerAccess")
     public SqliteConnectionFactory(Path file, Set<String> tags) {
@@ -35,8 +39,9 @@ public class SqliteConnectionFactory implements ConnectionFactory {
                 throw new IllegalArgumentException("unsupported tag: " + tag);
         }
 
-        this.tags = Collections.unmodifiableSet(new HashSet<>(tags));
+        this.tags = Set.copyOf(tags);
         this.file = file;
+        this.dbSource = buildDbSource("jdbc:sqlite:file:" + file + "?cache=shared");
     }
 
     private boolean supportedTableName(String tag) {
@@ -58,7 +63,8 @@ public class SqliteConnectionFactory implements ConnectionFactory {
     public Connection getConnection() throws SQLException {
         Connection connection = null;
         try {
-            connection = DriverManager.getConnection("jdbc:sqlite:file:" + file.toString() + "?cache=shared");
+//            connection = DriverManager.getConnection("jdbc:sqlite:file:" + file.toString() + "?cache=shared");
+            connection = dbSource.getConnection();
 
             checkVersion(connection);
             createTables(connection);
@@ -148,4 +154,18 @@ public class SqliteConnectionFactory implements ConnectionFactory {
         }
     }
 
+    private HikariDataSource buildDbSource(String url) {
+        HikariConfig config = new HikariConfig();
+        config.setJdbcUrl(url);
+        // these are arbitrary and not scientific
+        config.addDataSourceProperty("cachePrepStmts", "true");
+        config.addDataSourceProperty("prepStmtCacheSize", "250");
+        config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+
+        // TODO: we don't need more than 1 connection in the pool atm; will add more if needed; potentially in the
+        // thread that works with the DB (not load-profiles)
+        config.setMaximumPoolSize(1);
+
+        return new HikariDataSource(config);
+    }
 }
