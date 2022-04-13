@@ -2,7 +2,7 @@
 
 | Version | Released |
 | --- | --- |
-|[1.3.0](#v130)| `14 April 2022` |
+|[1.3.0](#v130)| `TBD` |
 | [1.2.0](#v120) | `06 October 2020` |
 
 ---
@@ -11,7 +11,7 @@
 
 ##### Enhancements
 
-* Make if thread safe
+* Make blob store thread safe
 * Add db connection pool
 
 ---
