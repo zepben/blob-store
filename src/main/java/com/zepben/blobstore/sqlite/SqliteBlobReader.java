@@ -152,8 +152,8 @@ public class SqliteBlobReader implements BlobReader {
 
                 PreparedStatement stmt;
                 String sql;
-                // We're no longer caching statements as we're using
-                // a connection pool + driver caching
+
+                // Statements are cached in the driver and handled by the connection pool
                 sql = buildSql(tagsArr, whereBlobs, idsSize == 1 ? 1 : limitInQuery);
                 stmt = getConnection().prepareStatement(sql);
                 setStatementOptions(stmt);

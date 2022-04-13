@@ -63,7 +63,6 @@ public class SqliteConnectionFactory implements ConnectionFactory {
     public Connection getConnection() throws SQLException {
         Connection connection = null;
         try {
-//            connection = DriverManager.getConnection("jdbc:sqlite:file:" + file.toString() + "?cache=shared");
             connection = dbSource.getConnection();
 
             checkVersion(connection);

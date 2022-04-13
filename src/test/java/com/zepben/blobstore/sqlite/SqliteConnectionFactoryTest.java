@@ -36,15 +36,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SqliteConnectionFactoryTest {
 
-    private static final String tempDB = "store.db";
     private static Path dbFile;
 
-    static {
-        try {
-            dbFile = Files.createTempFile(Path.of("/tmp"), tempDB, "");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    @BeforeEach
+    public void before() throws IOException {
+        if (dbFile != null) Files.deleteIfExists(dbFile);
+        dbFile = Files.createTempFile(Path.of(System.getProperty("java.io.tmpdir")), "store.db", "");
     }
 
     @AfterAll
@@ -52,11 +49,6 @@ public class SqliteConnectionFactoryTest {
         Files.deleteIfExists(dbFile);
     }
 
-    @BeforeEach
-    public void before() throws IOException {
-        Files.deleteIfExists(dbFile);
-        dbFile = Files.createTempFile(Path.of("/tmp"), tempDB, "");
-    }
 
     @Test
     @SuppressWarnings("SqlResolve")
@@ -98,8 +90,8 @@ public class SqliteConnectionFactoryTest {
         }
 
         expect(() -> new SqliteConnectionFactory(dbFile, tags).getConnection())
-                .toThrow(SQLException.class)
-                .withMessage("Failed to initialise sqlite database '" + dbFile.toString() + "'");
+            .toThrow(SQLException.class)
+            .withMessage("Failed to initialise sqlite database '" + dbFile.toString() + "'");
 
     }
 
