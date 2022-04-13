@@ -19,7 +19,6 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
@@ -38,17 +37,19 @@ import static org.junit.jupiter.api.Assertions.*;
 @SuppressWarnings("SqlNoDataSourceInspection")
 public class SqliteBlobStoreTest {
 
-    private static final Path dbFile = Paths.get("src/test/data/store.db");
+    private static Path dbFile;
 
     @BeforeEach
     public void before() throws IOException {
-        Files.deleteIfExists(dbFile);
+        if (dbFile != null) Files.deleteIfExists(dbFile);
+        dbFile = Files.createTempFile(Path.of(System.getProperty("java.io.tmpdir")), "store.db", "");
     }
 
     @AfterAll
     public static void afterAll() throws IOException {
         Files.deleteIfExists(dbFile);
     }
+
 
     private Set<String> tagsSet(String... tags) {
         return new HashSet<>(Arrays.asList(tags));
@@ -63,7 +64,6 @@ public class SqliteBlobStoreTest {
 
     @Test
     public void rejectsInvalidTags() {
-
         expect(() -> new SqliteBlobStore(dbFile, tagsSet("alpha_numerics_123", "not;allowed")))
                 .toThrow(IllegalArgumentException.class);
     }
@@ -169,7 +169,7 @@ public class SqliteBlobStoreTest {
     }
 
     @Test
-    public void missingTagsThrows() throws BlobStoreException {
+    public void missingTagsThrows() {
         expect(() -> {
                     try (SqliteBlobStore store = new SqliteBlobStore(dbFile, tagsSet("tag"))) {
                         Map<String, BlobReader.BlobHandler> tags = new HashMap<>();
@@ -241,7 +241,7 @@ public class SqliteBlobStoreTest {
     }
 
     @Test
-    public void writeThrowsOnIdViolation(){
+    public void writeThrowsOnIdViolation() {
         final String tag = "tests";
         expect(() -> {
             try (SqliteBlobStore store = new SqliteBlobStore(dbFile, tagsSet(tag))) {
@@ -353,7 +353,7 @@ public class SqliteBlobStoreTest {
     }
 
     @Test
-    public void writeFailsWithUnknownTag() throws Exception {
+    public void writeFailsWithUnknownTag() {
         final String tag = "tests";
         expect(() -> {
             try (SqliteBlobStore store = new SqliteBlobStore(dbFile, Collections.singleton(tag))) {
@@ -364,7 +364,7 @@ public class SqliteBlobStoreTest {
     }
 
     @Test
-    public void updateFailsWithUnknownTag() throws Exception {
+    public void updateFailsWithUnknownTag() {
         final String tag = "tests";
         expect(() -> {
             try (SqliteBlobStore store = new SqliteBlobStore(dbFile, Collections.singleton(tag))) {
@@ -375,7 +375,7 @@ public class SqliteBlobStoreTest {
     }
 
     @Test
-    public void deleteFailsWithUnknownTag() throws Exception {
+    public void deleteFailsWithUnknownTag() {
         final String tag = "tests";
         expect(() -> {
             try (SqliteBlobStore store = new SqliteBlobStore(dbFile, Collections.singleton(tag))) {
@@ -387,7 +387,7 @@ public class SqliteBlobStoreTest {
     }
 
     @Test
-    public void forEachFailsWithUnknownKey() throws BlobStoreException {
+    public void forEachFailsWithUnknownKey() {
         expect(() -> {
             try (SqliteBlobStore store = new SqliteBlobStore(dbFile, tagsSet("tag"))) {
                 store.reader().forEach(Collections.singleton("a"), "unknown", ((id, tag, bytes) -> {
@@ -397,7 +397,7 @@ public class SqliteBlobStoreTest {
     }
 
     @Test
-    public void forAllManyFailsWithUnknownKey() throws BlobStoreException {
+    public void forAllManyFailsWithUnknownKey() {
         expect(() -> {
             try (SqliteBlobStore store = new SqliteBlobStore(dbFile, tagsSet("tag"))) {
                 store.reader().forAll("unknown", ((id, tag, bytes) -> {

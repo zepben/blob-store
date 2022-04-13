@@ -9,20 +9,10 @@
 
 ### v1.3.0
 
-##### Breaking Changes
-* None.
-
-##### New Features
-* None.
-
 ##### Enhancements
-* None.
 
-##### Fixes
-* None.
-
-##### Notes
-* None.
+* Make blob store thread safe
+* Add db connection pool
 
 ---
 

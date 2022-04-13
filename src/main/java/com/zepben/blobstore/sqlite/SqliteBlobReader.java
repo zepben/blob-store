@@ -150,29 +150,20 @@ public class SqliteBlobReader implements BlobReader {
                 int limitInQuery = Math.min(MAX_PARAM_IDS_IN_QUERY, idsSize - idsCount);
                 idsCount += limitInQuery;
 
-                boolean closeStmt = true;
                 PreparedStatement stmt;
-                if (ids.size() == 1 && whereBlobs.isEmpty()) {
-                    closeStmt = false;
-                    stmt = getCachedStatement(tags, tagsArr);
-                } else {
-                    String sql = buildSql(tagsArr, whereBlobs, limitInQuery);
-                    stmt = getConnection().prepareStatement(sql);
-                    setStatementOptions(stmt);
-                }
+                String sql;
 
-                try {
-                    if (limitInQuery > 0)
-                        prepareIds(stmt, idIter, limitInQuery);
+                // Statements are cached in the driver and handled by the connection pool
+                sql = buildSql(tagsArr, whereBlobs, idsSize == 1 ? 1 : limitInQuery);
+                stmt = getConnection().prepareStatement(sql);
+                setStatementOptions(stmt);
 
-                    if (!whereBlobs.isEmpty())
-                        prepareWheres(stmt, whereBlobs, limitInQuery);
+                if (limitInQuery > 0)
+                    prepareIds(stmt, idIter, limitInQuery);
+                if (!whereBlobs.isEmpty())
+                    prepareWheres(stmt, whereBlobs, limitInQuery);
+                executeQuery(stmt, tagsArr, handler);
 
-                    executeQuery(stmt, tagsArr, handler);
-                } finally {
-                    if (closeStmt)
-                        stmt.close();
-                }
             } while (idsCount < idsSize);
         } catch (SQLException e) {
             throw logAndNewException("Error querying database", e, BlobStoreException::new);
@@ -183,7 +174,9 @@ public class SqliteBlobReader implements BlobReader {
         Map<String, byte[]> blobs = new HashMap<>(tags.length);
         Map<String, byte[]> blobsView = Collections.unmodifiableMap(blobs);
 
-        try (ResultSet rs = stmt.executeQuery()) {
+        // when this is done, the statement is closed,
+        // which will return the connection to the pool
+        try (stmt; ResultSet rs = stmt.executeQuery()) {
             if (!rs.isClosed())
                 rs.setFetchDirection(ResultSet.FETCH_FORWARD);
 
@@ -197,16 +190,6 @@ public class SqliteBlobReader implements BlobReader {
                 handler.handle(id, blobsView);
             }
         }
-    }
-
-    private PreparedStatement getCachedStatement(Set<String> tagsKey, String[] tagsSql) throws SQLException {
-        PreparedStatement statement = cachedStatements.get(tagsKey);
-        if (statement == null) {
-            statement = getConnection().prepareStatement(buildSql(tagsSql, Collections.emptyList(), 1));
-            setStatementOptions(statement);
-            cachedStatements.put(tagsKey, statement);
-        }
-        return statement;
     }
 
     private void setStatementOptions(PreparedStatement statement) throws SQLException {
