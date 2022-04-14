@@ -41,7 +41,6 @@ public class SqliteBlobReader implements BlobReader {
 
     private final ConnectionFactory connectionFactory;
     @Nullable private Connection connection;
-    private final Map<Set<String>, PreparedStatement> cachedStatements = new HashMap<>();
     private final Metadata metadata;
 
     @SuppressWarnings("WeakerAccess")
@@ -113,15 +112,6 @@ public class SqliteBlobReader implements BlobReader {
 
     @Override
     public void close() throws BlobStoreException {
-        cachedStatements.values().forEach(statement -> {
-            try {
-                statement.close();
-            } catch (SQLException e) {
-                // If we can't close a statement the connection error handler will do.
-            }
-        });
-        cachedStatements.clear();
-
         try {
             if (connection != null) {
                 connection.close();
@@ -150,18 +140,15 @@ public class SqliteBlobReader implements BlobReader {
                 int limitInQuery = Math.min(MAX_PARAM_IDS_IN_QUERY, idsSize - idsCount);
                 idsCount += limitInQuery;
 
-                PreparedStatement stmt;
-                String sql;
-
-                // Statements are cached in the driver and handled by the connection pool
-                sql = buildSql(tagsArr, whereBlobs, idsSize == 1 ? 1 : limitInQuery);
-                stmt = getConnection().prepareStatement(sql);
+                String sql = buildSql(tagsArr, whereBlobs, ids.size() == 1 ? 1 : limitInQuery);
+                PreparedStatement stmt = getConnection().prepareStatement(sql);
                 setStatementOptions(stmt);
 
                 if (limitInQuery > 0)
                     prepareIds(stmt, idIter, limitInQuery);
                 if (!whereBlobs.isEmpty())
                     prepareWheres(stmt, whereBlobs, limitInQuery);
+
                 executeQuery(stmt, tagsArr, handler);
 
             } while (idsCount < idsSize);
@@ -175,7 +162,8 @@ public class SqliteBlobReader implements BlobReader {
         Map<String, byte[]> blobsView = Collections.unmodifiableMap(blobs);
 
         // when this is done, the statement is closed,
-        // which will return the connection to the pool
+        // connection is clearing the DB locks making it
+        // available to other work
         try (stmt; ResultSet rs = stmt.executeQuery()) {
             if (!rs.isClosed())
                 rs.setFetchDirection(ResultSet.FETCH_FORWARD);
