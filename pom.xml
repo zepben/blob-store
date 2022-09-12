@@ -9,7 +9,7 @@
 
     <groupId>com.zepben</groupId>
     <artifactId>blob-store</artifactId>
-    <version>1.4.0-SNAPSHOT1</version>
+    <version>1.4.0-SNAPSHOT2</version>
     <packaging>jar</packaging>
 
     <name>${project.groupId}:${project.artifactId}</name>
