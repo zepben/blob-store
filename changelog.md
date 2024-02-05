@@ -3,7 +3,7 @@
 ## [1.4.0] - UNRELEASED
 
 ### Breaking Changes
-* None.
+* Updated the super pom with potentially breaking transitive dependencies.
 
 ### New Features
 * None.
