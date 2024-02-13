@@ -6,45 +6,25 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package com.zepben.blobstore;
-
-import com.zepben.annotations.EverythingIsNonnullByDefault;
-
-import javax.annotation.Nullable;
-import java.util.*;
-import java.util.function.Consumer;
+package com.zepben.blobstore
 
 /**
- * An interface that is to be used by an {@link BlobStore} to provide just reading/getting functionality.
+ * Callback interface that allows getting blobs without having to populate and return collections.
+ * Useful for large queries to reduce memory footprint.
+ *
+ * @param id   the id of the item.
+ * @param tag  The tag associated with the item.
+ * @param blob the byte array containing the blob.
  */
-@EverythingIsNonnullByDefault
-public interface BlobReader extends AutoCloseable {
+@Suppress("KDocUnresolvedReference")
+typealias BlobHandler = (id: String, tag: String, blob: ByteArray) -> Unit
 
-    /**
-     * Callback interface that allows getting blobs without having to populate and return collections.
-     * Useful for large queries to reduce memory footprint.
-     */
-    @EverythingIsNonnullByDefault
-    @FunctionalInterface
-    interface BlobHandler {
+typealias TagsHandler = (id: String, blobs: Map<String, ByteArray>) -> Unit
 
-        /**
-         * The handler method that is called when an item is read.
-         *
-         * @param id   the id of the item.
-         * @param tag  The tag associated with the item.
-         * @param blob the byte array containing the blob.
-         */
-        void handle(String id, String tag, byte[] blob);
-
-    }
-
-    @EverythingIsNonnullByDefault
-    interface TagsHandler {
-
-        void handle(String id, Map<String, byte[]> blobs);
-
-    }
+/**
+ * An interface that is to be used by an [BlobStore] to provide just reading/getting functionality.
+ */
+interface BlobReader : AutoCloseable {
 
     /**
      * Gets the set of IDs that are in the store with any tag
@@ -52,11 +32,12 @@ public interface BlobReader extends AutoCloseable {
      * @return all the IDs in the store.
      * @throws BlobStoreException if there is an error reading from the store.
      */
-    default Set<String> ids() throws BlobStoreException {
-        Set<String> ids = new HashSet<>();
-        ids(ids::add);
-        return ids;
-    }
+    @Throws(BlobStoreException::class)
+    fun ids(): Set<String> =
+        mutableSetOf<String>().also {
+            // Consume the ids into the set.
+            ids(it::add)
+        }
 
     /**
      * Gets the set of IDs that are in the store with the given tag.
@@ -65,11 +46,12 @@ public interface BlobReader extends AutoCloseable {
      * @return the IDs that have this tag.
      * @throws BlobStoreException if there is an error reading from the store.
      */
-    default Set<String> ids(String tag) throws BlobStoreException {
-        Set<String> ids = new HashSet<>();
-        ids(tag, ids::add);
-        return ids;
-    }
+    @Throws(BlobStoreException::class)
+    fun ids(tag: String): Set<String> =
+        mutableSetOf<String>().also {
+            // Consume the ids into the set.
+            ids(tag, it::add)
+        }
 
     /**
      * Finds all ids in the store, calling the provided handler for every id.
@@ -77,7 +59,8 @@ public interface BlobReader extends AutoCloseable {
      * @param idHandler callback for each id found
      * @throws BlobStoreException if there is an error reading from the store.
      */
-    void ids(Consumer<String> idHandler) throws BlobStoreException;
+    @Throws(BlobStoreException::class)
+    fun ids(idHandler: (String) -> Unit)
 
     /**
      * Finds all ids that have the given tag, calling the provided handler for every id.
@@ -86,7 +69,8 @@ public interface BlobReader extends AutoCloseable {
      * @param idHandler callback for each id found
      * @throws BlobStoreException if there is an error reading from the store.
      */
-    void ids(String tag, Consumer<String> idHandler) throws BlobStoreException;
+    @Throws(BlobStoreException::class)
+    fun ids(tag: String, idHandler: (String) -> Unit)
 
     /**
      * Gets a blob for the given id associated with the given tag.
@@ -96,12 +80,12 @@ public interface BlobReader extends AutoCloseable {
      * @return The blob if it exists, otherwise null.
      * @throws BlobStoreException if there is an error reading from the store.
      */
-    @Nullable
-    default byte[] get(String id, String tag) throws BlobStoreException {
-        Captor<byte[]> captor = new Captor<>();
-        forEach(Collections.singleton(id), tag, (captureId, t, item) -> captor.capture(item));
-        return captor.getCapture();
-    }
+    @Throws(BlobStoreException::class)
+    operator fun get(id: String, tag: String): ByteArray? =
+        Captor<ByteArray>().let { captor ->
+            forEach(setOf(id), tag) { _, _, item -> captor.capture(item) }
+            captor.captured
+        }
 
     /**
      * Gets a collection of blobs for the given ids associated with the given tag.
@@ -111,13 +95,14 @@ public interface BlobReader extends AutoCloseable {
      * @return a map of id to blob
      * @throws BlobStoreException when there is an error getting a blob
      */
-    default Map<String, byte[]> get(Collection<String> ids, String tag) throws BlobStoreException {
+    @Throws(BlobStoreException::class)
+    operator fun get(ids: Collection<String>, tag: String): Map<String, ByteArray> {
         if (ids.isEmpty())
-            return Collections.emptyMap();
+            return emptyMap()
 
-        Map<String, byte[]> items = new HashMap<>();
-        forEach(ids, tag, (id, t, item) -> items.put(id, item));
-        return items;
+        return mutableMapOf<String, ByteArray>().also { items ->
+            forEach(ids, tag) { id, _, item -> items[id] = item }
+        }
     }
 
     /**
@@ -129,16 +114,12 @@ public interface BlobReader extends AutoCloseable {
      * @param handler callback that handles blobs as they are read
      * @throws BlobStoreException when there is an error getting an item
      */
-    default void forEach(Collection<String> ids,
-                         String tag,
-                         BlobHandler handler) throws BlobStoreException {
-        forEach(ids, Collections.singleton(tag), (id, blobs) -> {
-            if (blobs.size() > 0) {
-                byte[] blob = blobs.values().iterator().next();
-                if (blob != null)
-                    handler.handle(id, tag, blob);
-            }
-        });
+    @Throws(BlobStoreException::class)
+    fun forEach(ids: Collection<String>, tag: String, handler: BlobHandler) {
+        forEach(ids, setOf(tag)) { id, blobs ->
+            if (blobs.isNotEmpty())
+                handler(id, tag, blobs.values.iterator().next())
+        }
     }
 
     /**
@@ -149,9 +130,8 @@ public interface BlobReader extends AutoCloseable {
      * @param handler handler to be called with the blobs of the requested tags
      * @throws BlobStoreException if there is an error reading from the store.
      */
-    void forEach(Collection<String> ids,
-                 Set<String> tags,
-                 TagsHandler handler) throws BlobStoreException;
+    @Throws(BlobStoreException::class)
+    fun forEach(ids: Collection<String>, tags: Set<String>, handler: TagsHandler)
 
     /**
      * Gets all blobs associated with the given tag.
@@ -160,11 +140,11 @@ public interface BlobReader extends AutoCloseable {
      * @return A map of id to blob
      * @throws BlobStoreException if there is an error reading from the store.
      */
-    default Map<String, byte[]> getAll(String tag) throws BlobStoreException {
-        Map<String, byte[]> items = new HashMap<>();
-        forAll(tag, (id, t, item) -> items.put(id, item));
-        return items;
-    }
+    @Throws(BlobStoreException::class)
+    fun getAll(tag: String): Map<String, ByteArray> =
+        mutableMapOf<String, ByteArray>().also { items ->
+            forAll(tag) { id, _, item -> items[id] = item }
+        }
 
     /**
      * Reads all blobs associated with the given tag and calls the provided handler
@@ -173,14 +153,13 @@ public interface BlobReader extends AutoCloseable {
      * @param handler callback that handles blobs as they are read
      * @throws BlobStoreException when there is an error getting an item
      */
-    default void forAll(String tag, BlobHandler handler) throws BlobStoreException {
-        forAll(Collections.singleton(tag), ((id, blobs) -> {
-            if (blobs.size() > 0) {
-                byte[] blob = blobs.values().iterator().next();
-                if (blob != null)
-                    handler.handle(id, tag, blob);
+    @Throws(BlobStoreException::class)
+    fun forAll(tag: String, handler: BlobHandler) {
+        forAll(setOf(tag)) { id, blobs ->
+            if (blobs.isNotEmpty()) {
+                handler(id, tag, blobs.values.iterator().next())
             }
-        }));
+        }
     }
 
     /**
@@ -190,9 +169,9 @@ public interface BlobReader extends AutoCloseable {
      * @param handler handler to be called with blobs of all available requested tags
      * @throws BlobStoreException if there is an error reading from the store.
      */
-    default void forAll(Set<String> tags,
-                        TagsHandler handler) throws BlobStoreException {
-        forAll(tags, Collections.emptyList(), handler);
+    @Throws(BlobStoreException::class)
+    fun forAll(tags: Set<String>, handler: TagsHandler) {
+        forAll(tags, emptyList(), handler)
     }
 
     /**
@@ -203,11 +182,10 @@ public interface BlobReader extends AutoCloseable {
      * @param handler    handler to be called with blobs of all available requested tags
      * @throws BlobStoreException if there is an error reading from the store.
      */
-    void forAll(Set<String> tags,
-                List<WhereBlob> whereBlobs,
-                TagsHandler handler) throws BlobStoreException;
+    @Throws(BlobStoreException::class)
+    fun forAll(tags: Set<String>, whereBlobs: List<WhereBlob>, handler: TagsHandler)
 
-    @Override
-    void close() throws BlobStoreException;
+    @Throws(BlobStoreException::class)
+    override fun close()
 
 }

@@ -5,33 +5,29 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
-package com.zepben.blobstore;
-
-import com.zepben.annotations.EverythingIsNonnullByDefault;
+package com.zepben.blobstore
 
 /**
  * Interface that represents a blob store providing access to readers and writers
  * of that store.
  */
-@EverythingIsNonnullByDefault
-public interface BlobStore extends AutoCloseable {
+interface BlobStore : AutoCloseable {
 
     /**
      * Gets a reader for this store
      *
      * @return reader for this store
      */
-    BlobReader reader();
+    val reader: BlobReader
 
     /**
      * Gets a writer for this store
      *
      * @return writer for this store
      */
-    BlobWriter writer();
+    val writer: BlobWriter
 
-    @Override
-    void close() throws BlobStoreException;
+    @Throws(BlobStoreException::class)
+    override fun close()
 
 }

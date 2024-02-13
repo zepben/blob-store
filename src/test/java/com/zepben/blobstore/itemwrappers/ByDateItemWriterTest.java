@@ -59,8 +59,8 @@ public class ByDateItemWriterTest {
         verify(blobWriterProvider).getWriter(LocalDate.now(), timeZone);
         verify(writeHandler).accept(itemBlobWriterCaptor.capture(), objectCaptor.capture());
         assertThat(objectCaptor.getValue(), is(item));
-        assertThat(itemBlobWriterCaptor.getValue().id(), is(id));
-        assertThat(itemBlobWriterCaptor.getValue().date(), is(date));
+        assertThat(itemBlobWriterCaptor.getValue().id, is(id));
+        assertThat(itemBlobWriterCaptor.getValue().date, is(date));
     }
 
     @Test

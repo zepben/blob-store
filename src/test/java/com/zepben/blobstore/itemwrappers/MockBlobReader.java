@@ -8,7 +8,6 @@
 
 package com.zepben.blobstore.itemwrappers;
 
-import com.zepben.annotations.EverythingIsNonnullByDefault;
 import com.zepben.blobstore.BlobReader;
 import com.zepben.blobstore.BlobStoreException;
 import com.zepben.blobstore.WhereBlob;
@@ -16,7 +15,6 @@ import com.zepben.blobstore.WhereBlob;
 import java.util.*;
 import java.util.function.Consumer;
 
-@EverythingIsNonnullByDefault
 class MockBlobReader implements BlobReader {
 
     private final Set<String> ids;

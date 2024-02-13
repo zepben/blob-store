@@ -8,7 +8,6 @@
 
 package com.zepben.blobstore;
 
-import com.zepben.annotations.EverythingIsNonnullByDefault;
 import org.junit.jupiter.api.Test;
 
 import java.util.*;
@@ -21,18 +20,17 @@ import static org.hamcrest.Matchers.*;
 
 public class BlobReaderTest {
 
-    @EverythingIsNonnullByDefault
-    private BlobReader mockReader() {
-        return new BlobReader() {
-            @Override
-            public void ids(Consumer<String> idHandler) {
-                idHandler.accept("id1");
-                idHandler.accept("id2");
-            }
+        private BlobReader mockReader() {
+            return new BlobReader() {
+                @Override
+                public void ids(Consumer<String> idHandler) {
+                    idHandler.accept("id1");
+                    idHandler.accept("id2");
+                }
 
-            @Override
-            public void ids(String tag, Consumer<String> idHandler) {
-                idHandler.accept("id1");
+                @Override
+                public void ids(String tag, Consumer<String> idHandler) {
+                    idHandler.accept("id1");
                 idHandler.accept("id2");
             }
 

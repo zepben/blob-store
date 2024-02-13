@@ -19,7 +19,7 @@ public class BlobReadWriteExceptionTest {
     public void instanceWithThrowable() {
         Error error = new Error("test");
         BlobReadWriteException ex = new BlobReadWriteException("item1", "test", error);
-        assertThat(ex.itemId(), equalTo("item1"));
+        assertThat(ex.getItemId(), equalTo("item1"));
         assertThat(ex.getMessage(), equalTo("test"));
         assertThat(ex.getCause(), equalTo(error));
     }

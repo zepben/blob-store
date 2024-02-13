@@ -42,8 +42,8 @@ public class ItemBlobWriterTest {
     @Test
     public void idAndDateAreCorrect() {
         itemWriter = new ItemBlobWriter(blobWriter, id, date, onError);
-        assertThat(itemWriter.id(), is(id));
-        assertThat(itemWriter.date(), is(date));
+        assertThat(itemWriter.id, is(id));
+        assertThat(itemWriter.date, is(date));
     }
 
     @Test

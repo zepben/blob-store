@@ -5,21 +5,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
-package com.zepben.blobstore;
-
-import com.zepben.annotations.EverythingIsNonnullByDefault;
-
-import javax.annotation.Nullable;
+package com.zepben.blobstore
 
 /**
  * Exception that can be thrown when things fail with an item store.
  */
-@EverythingIsNonnullByDefault
-public class BlobStoreException extends Exception {
-
-    public BlobStoreException(String message, @Nullable Throwable cause) {
-        super(message, cause);
-    }
-
-}
+open class BlobStoreException(message: String? = null, cause: Throwable? = null) : Exception(message, cause)
