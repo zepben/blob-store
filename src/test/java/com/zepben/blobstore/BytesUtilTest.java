@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;
 
-import static net.trajano.commons.testing.UtilityClassTestUtil.assertUtilityClassWellDefined;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 

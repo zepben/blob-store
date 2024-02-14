@@ -256,7 +256,7 @@ public class SqliteBlobStoreTest {
                     store.getWriter().write("a", tag, b1);
                     store.getWriter().write("a", tag, b1);
                 } catch (Exception ex) {
-                    assertThat(((BlobReadWriteException)ex).getItemId(), equalTo("a"));
+                    assertThat(((BlobReadWriteException) ex).getItemId(), equalTo("a"));
                     assertThat(ex.getCause(), instanceOf(SQLException.class));
                     throw ex;
                 }
