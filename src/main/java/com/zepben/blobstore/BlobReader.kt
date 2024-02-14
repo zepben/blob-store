@@ -17,9 +17,9 @@ package com.zepben.blobstore
  * @param blob the byte array containing the blob.
  */
 @Suppress("KDocUnresolvedReference")
-typealias BlobHandler = (id: String, tag: String, blob: ByteArray) -> Unit
+typealias BlobHandler = (id: String, tag: String, blob: ByteArray?) -> Unit
 
-typealias TagsHandler = (id: String, blobs: Map<String, ByteArray>) -> Unit
+typealias TagsHandler = (id: String, blobs: Map<String, ByteArray?>) -> Unit
 
 /**
  * An interface that is to be used by an [BlobStore] to provide just reading/getting functionality.
@@ -96,11 +96,11 @@ interface BlobReader : AutoCloseable {
      * @throws BlobStoreException when there is an error getting a blob
      */
     @Throws(BlobStoreException::class)
-    operator fun get(ids: Collection<String>, tag: String): Map<String, ByteArray> {
+    operator fun get(ids: Collection<String>, tag: String): Map<String, ByteArray?> {
         if (ids.isEmpty())
             return emptyMap()
 
-        return mutableMapOf<String, ByteArray>().also { items ->
+        return mutableMapOf<String, ByteArray?>().also { items ->
             forEach(ids, tag) { id, _, item -> items[id] = item }
         }
     }
@@ -117,8 +117,9 @@ interface BlobReader : AutoCloseable {
     @Throws(BlobStoreException::class)
     fun forEach(ids: Collection<String>, tag: String, handler: BlobHandler) {
         forEach(ids, setOf(tag)) { id, blobs ->
-            if (blobs.isNotEmpty())
-                handler(id, tag, blobs.values.iterator().next())
+            blobs.values.firstOrNull()?.also {
+                handler(id, tag, it)
+            }
         }
     }
 
@@ -141,8 +142,8 @@ interface BlobReader : AutoCloseable {
      * @throws BlobStoreException if there is an error reading from the store.
      */
     @Throws(BlobStoreException::class)
-    fun getAll(tag: String): Map<String, ByteArray> =
-        mutableMapOf<String, ByteArray>().also { items ->
+    fun getAll(tag: String): Map<String, ByteArray?> =
+        mutableMapOf<String, ByteArray?>().also { items ->
             forAll(tag) { id, _, item -> items[id] = item }
         }
 

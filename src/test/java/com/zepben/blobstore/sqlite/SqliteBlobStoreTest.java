@@ -9,9 +9,10 @@
 package com.zepben.blobstore.sqlite;
 
 import com.zepben.blobstore.BlobReadWriteException;
-import com.zepben.blobstore.BlobReader;
 import com.zepben.blobstore.BlobStoreException;
 import com.zepben.blobstore.WhereBlob;
+import kotlin.Unit;
+import kotlin.jvm.functions.Function3;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,7 +51,6 @@ public class SqliteBlobStoreTest {
         Files.deleteIfExists(dbFile);
     }
 
-
     private Set<String> tagsSet(String... tags) {
         return new HashSet<>(Arrays.asList(tags));
     }
@@ -65,7 +65,7 @@ public class SqliteBlobStoreTest {
     @Test
     public void rejectsInvalidTags() {
         expect(() -> new SqliteBlobStore(dbFile, tagsSet("alpha_numerics_123", "not;allowed")))
-                .toThrow(IllegalArgumentException.class);
+            .toThrow(IllegalArgumentException.class);
     }
 
     @Test
@@ -79,48 +79,49 @@ public class SqliteBlobStoreTest {
             byte[] bytes2 = bytes(2);
             byte[] bytes3 = bytes(3, 4, 5, 6);
             byte[] bytes3Expected = bytes(4, 5);
-            assertTrue(store.writer().write(item1, "tag1", bytes1));
-            assertTrue(store.writer().write(item2, "tag1", bytes2));
-            assertTrue(store.writer().write(item3, "tag1", bytes3, 1, 2));
-            store.writer().commit();
+            assertTrue(store.getWriter().write(item1, "tag1", bytes1));
+            assertTrue(store.getWriter().write(item2, "tag1", bytes2));
+            assertTrue(store.getWriter().write(item3, "tag1", bytes3, 1, 2));
+            store.getWriter().commit();
 
-            Map<String, byte[]> items = store.reader().getAll("tag1");
+            Map<String, byte[]> items = store.getReader().getAll("tag1");
             assertThat(items.get(item1), is(bytes1));
             assertThat(items.get(item2), is(bytes2));
             assertThat(items.get(item3), is(bytes3Expected));
 
-            items = store.reader().get(Arrays.asList(item2, item3), "tag1");
+            items = store.getReader().get(Arrays.asList(item2, item3), "tag1");
             assertThat(items.get(item2), is(bytes2));
             assertThat(items.get(item3), is(bytes3Expected));
 
             byte[] b1Update = bytes(1, 1, 1, 1);
             byte[] b1UpdateExpected = bytes(1, 1, 1);
-            assertTrue(store.writer().update(item1, "tag1", b1Update, 1, 3));
-            store.writer().commit();
+            assertTrue(store.getWriter().update(item1, "tag1", b1Update, 1, 3));
+            store.getWriter().commit();
 
-            byte[] bytes = store.reader().get(item1, "tag1");
+            byte[] bytes = store.getReader().get(item1, "tag1");
             assertNotNull(bytes);
             assertThat(bytes, equalTo(b1UpdateExpected));
 
-            store.writer().write(item1, "tag2", bytes3);
-            store.writer().commit();
-            assertTrue(store.writer().delete(item1));
-            store.writer().commit();
-            items = store.reader().getAll("tag1");
+            store.getWriter().write(item1, "tag2", bytes3);
+            store.getWriter().commit();
+            assertTrue(store.getWriter().delete(item1));
+            store.getWriter().commit();
+            items = store.getReader().getAll("tag1");
             assertFalse(items.containsKey(item1));
-            items = store.reader().getAll("tag2");
+            items = store.getReader().getAll("tag2");
             assertFalse(items.containsKey(item1));
 
-            store.writer().write(item2, "tag2", bytes3);
-            store.writer().commit();
-            assertTrue(store.writer().delete(item2, "tag1"));
-            store.writer().commit();
+            store.getWriter().write(item2, "tag2", bytes3);
+            store.getWriter().commit();
+            assertTrue(store.getWriter().delete(item2, "tag1"));
+            store.getWriter().commit();
             final CountDownLatch latch = new CountDownLatch(1);
-            store.reader().forEach(Collections.singleton(item2), tags, (id, blobs) -> {
+            store.getReader().forEach(Collections.singleton(item2), tags, (id, blobs) -> {
                 assertThat(blobs.keySet(), containsInAnyOrder("tag1", "tag2"));
                 assertThat(blobs.get("tag1"), equalTo(null));
                 assertThat(blobs.get("tag2"), equalTo(bytes3));
                 latch.countDown();
+                return null;
             });
 
             boolean receivedSignal = latch.await(1, TimeUnit.SECONDS);
@@ -137,14 +138,14 @@ public class SqliteBlobStoreTest {
             byte[] b = bytes(1);
             byte[] c = bytes(1);
 
-            store.writer().write("a", "tag1", a1);
-            store.writer().write("b", "tag1", b);
-            store.writer().write("a", "tag2", a2);
-            store.writer().write("c", "tag2", c);
-            store.writer().commit();
+            store.getWriter().write("a", "tag1", a1);
+            store.getWriter().write("b", "tag1", b);
+            store.getWriter().write("a", "tag2", a2);
+            store.getWriter().write("c", "tag2", c);
+            store.getWriter().commit();
 
             AtomicBoolean calledBack = new AtomicBoolean(false);
-            store.reader().forEach(Arrays.asList("a", "b", "c"), tags, (id, blobs) -> {
+            store.getReader().forEach(Arrays.asList("a", "b", "c"), tags, (id, blobs) -> {
                 calledBack.set(true);
                 assertThat(blobs.keySet(), containsInAnyOrder("tag1", "tag2"));
                 switch (id) {
@@ -163,6 +164,7 @@ public class SqliteBlobStoreTest {
                     default:
                         fail("unexpected id: " + id);
                 }
+                return null;
             });
             assertTrue(calledBack.get());
         }
@@ -171,14 +173,12 @@ public class SqliteBlobStoreTest {
     @Test
     public void missingTagsThrows() {
         expect(() -> {
-                    try (SqliteBlobStore store = new SqliteBlobStore(dbFile, tagsSet("tag"))) {
-                        Map<String, BlobReader.BlobHandler> tags = new HashMap<>();
-                        tags.put("missing", (id, tag, bytes) -> {
-                        });
-                        store.reader().forAll(tagsSet("missing"), ((id, blobs) -> {
-                        }));
-                    }
+                try (SqliteBlobStore store = new SqliteBlobStore(dbFile, tagsSet("tag"))) {
+                    Map<String, Function3<String, String, byte[], Unit>> tags = new HashMap<>();
+                    tags.put("missing", (id, tag, bytes) -> null);
+                    store.getReader().forAll(tagsSet("missing"), ((id, blobs) -> null));
                 }
+            }
         ).toThrow(BlobStoreException.class);
     }
 
@@ -188,17 +188,23 @@ public class SqliteBlobStoreTest {
         try (SqliteBlobStore store = new SqliteBlobStore(dbFile, tags)) {
             byte[] b1 = bytes(1, 2);
             byte[] b2 = bytes(3, 4);
-            store.writer().write("id1", "tag1", b1);
-            store.writer().write("id2", "tag1", b2);
+            store.getWriter().write("id1", "tag1", b1);
+            store.getWriter().write("id2", "tag1", b2);
 
             List<String> matched = new ArrayList<>();
-            WhereBlob whereBlob = WhereBlob.equals("tag1", b1);
-            store.reader().forAll(tags, Collections.singletonList(whereBlob), (id, blobs) -> matched.add(id));
+            WhereBlob whereBlob = WhereBlob.Companion.equals("tag1", b1);
+            store.getReader().forAll(tags, Collections.singletonList(whereBlob), (id, blobs) -> {
+                matched.add(id);
+                return null;
+            });
             assertThat(matched, contains("id1"));
 
             matched.clear();
-            whereBlob = WhereBlob.notEqual("tag1", b1);
-            store.reader().forAll(tags, Collections.singletonList(whereBlob), (id, blobs) -> matched.add(id));
+            whereBlob = WhereBlob.Companion.notEqual("tag1", b1);
+            store.getReader().forAll(tags, Collections.singletonList(whereBlob), (id, blobs) -> {
+                matched.add(id);
+                return null;
+            });
             assertThat(matched, contains("id2"));
         }
     }
@@ -208,17 +214,17 @@ public class SqliteBlobStoreTest {
         final String tag = "tests";
         try (SqliteBlobStore store = new SqliteBlobStore(dbFile, tagsSet(tag))) {
             byte[] b1 = bytes(1);
-            store.writer().write("a", tag, b1);
-            store.writer().commit();
+            store.getWriter().write("a", tag, b1);
+            store.getWriter().commit();
 
-            byte[] readBytes = store.reader().get("a", tag);
+            byte[] readBytes = store.getReader().get("a", tag);
             assertThat(readBytes, equalTo(b1));
 
             byte[] b1Update = bytes(1, 1);
-            store.writer().update("a", tag, b1Update);
-            store.writer().rollback();
+            store.getWriter().update("a", tag, b1Update);
+            store.getWriter().rollback();
 
-            readBytes = store.reader().get("a", tag);
+            readBytes = store.getReader().get("a", tag);
             assertThat(readBytes, equalTo(b1));
         }
     }
@@ -226,16 +232,16 @@ public class SqliteBlobStoreTest {
     @Test
     public void metadata() throws Exception {
         try (SqliteBlobStore store = new SqliteBlobStore(dbFile, tagsSet())) {
-            assertTrue(store.writer().writeMetadata("test", "value1"));
-            String value = store.reader().getMetadata("test");
+            assertTrue(store.getWriter().writeMetadata("test", "value1"));
+            String value = store.getReader().getMetadata("test");
             assertThat(value, equalTo("value1"));
 
-            assertTrue(store.writer().updateMetadata("test", "value2"));
-            value = store.reader().getMetadata("test");
+            assertTrue(store.getWriter().updateMetadata("test", "value2"));
+            value = store.getReader().getMetadata("test");
             assertThat(value, equalTo("value2"));
 
-            assertTrue(store.writer().deleteMetadata("test"));
-            value = store.reader().getMetadata("test");
+            assertTrue(store.getWriter().deleteMetadata("test"));
+            value = store.getReader().getMetadata("test");
             assertThat(value, equalTo(null));
         }
     }
@@ -247,10 +253,10 @@ public class SqliteBlobStoreTest {
             try (SqliteBlobStore store = new SqliteBlobStore(dbFile, tagsSet(tag))) {
                 byte[] b1 = bytes(1);
                 try {
-                    store.writer().write("a", tag, b1);
-                    store.writer().write("a", tag, b1);
-                } catch (BlobReadWriteException ex) {
-                    assertThat(ex.getItemId(), equalTo("a"));
+                    store.getWriter().write("a", tag, b1);
+                    store.getWriter().write("a", tag, b1);
+                } catch (Exception ex) {
+                    assertThat(((BlobReadWriteException)ex).getItemId(), equalTo("a"));
                     assertThat(ex.getCause(), instanceOf(SQLException.class));
                     throw ex;
                 }
@@ -267,14 +273,14 @@ public class SqliteBlobStoreTest {
             byte[] b1 = bytes(1);
             try {
                 // Force db to throw an exception
-                store.writer().write("a", tag, b1);
-                store.writer().write("a", tag, b1);
-            } catch (BlobReadWriteException ex) {
-                assertTrue(store.writer().write("b", tag, b1));
-                assertTrue(store.writer().update("b", tag, b1));
-                assertTrue(store.writer().delete("b"));
-                store.writer().commit();
-                store.writer().rollback();
+                store.getWriter().write("a", tag, b1);
+                store.getWriter().write("a", tag, b1);
+            } catch (Exception ex) {
+                assertTrue(store.getWriter().write("b", tag, b1));
+                assertTrue(store.getWriter().update("b", tag, b1));
+                assertTrue(store.getWriter().delete("b"));
+                store.getWriter().commit();
+                store.getWriter().rollback();
             }
         }
     }
@@ -283,7 +289,7 @@ public class SqliteBlobStoreTest {
     public void deleteRejectsIncorrectId() throws BlobStoreException {
         final String tag = "tests";
         try (SqliteBlobStore store = new SqliteBlobStore(dbFile, tagsSet(tag))) {
-            boolean validId = store.writer().delete("a", tag);
+            boolean validId = store.getWriter().delete("a", tag);
             assertThat(validId, is(false));
         }
     }
@@ -293,9 +299,9 @@ public class SqliteBlobStoreTest {
         final String tag = "tests";
         try (SqliteBlobStore store = new SqliteBlobStore(dbFile, tagsSet(tag))) {
             byte[] b1 = bytes(1);
-            store.writer().write("a", tag, b1);
-            store.writer().delete("a", tag);
-            boolean validId = store.writer().delete("a", tag);
+            store.getWriter().write("a", tag, b1);
+            store.getWriter().delete("a", tag);
+            boolean validId = store.getWriter().delete("a", tag);
             assertThat(validId, is(false));
         }
     }
@@ -304,12 +310,12 @@ public class SqliteBlobStoreTest {
     public void getsIds() throws BlobStoreException {
         try (SqliteBlobStore store = new SqliteBlobStore(dbFile, tagsSet("tag1", "tag2"))) {
             byte[] bytes = bytes(1);
-            store.writer().write("id1", "tag1", bytes);
-            store.writer().write("id2", "tag2", bytes);
-            store.writer().write("idboth", "tag1", bytes);
-            store.writer().write("idboth", "tag2", bytes);
+            store.getWriter().write("id1", "tag1", bytes);
+            store.getWriter().write("id2", "tag2", bytes);
+            store.getWriter().write("idboth", "tag1", bytes);
+            store.getWriter().write("idboth", "tag2", bytes);
 
-            Set<String> ids = store.reader().ids();
+            Set<String> ids = store.getReader().ids();
             assertThat(ids, containsInAnyOrder("id1", "id2", "idboth"));
         }
     }
@@ -318,15 +324,15 @@ public class SqliteBlobStoreTest {
     public void getsIdsWithTag() throws BlobStoreException {
         try (SqliteBlobStore store = new SqliteBlobStore(dbFile, tagsSet("tag1", "tag2"))) {
             byte[] bytes = bytes(1);
-            store.writer().write("id1", "tag1", bytes);
-            store.writer().write("id2", "tag2", bytes);
-            store.writer().write("idboth", "tag1", bytes);
-            store.writer().write("idboth", "tag2", bytes);
+            store.getWriter().write("id1", "tag1", bytes);
+            store.getWriter().write("id2", "tag2", bytes);
+            store.getWriter().write("idboth", "tag1", bytes);
+            store.getWriter().write("idboth", "tag2", bytes);
 
-            Set<String> ids = store.reader().ids("tag1");
+            Set<String> ids = store.getReader().ids("tag1");
             assertThat(ids, containsInAnyOrder("id1", "idboth"));
 
-            ids = store.reader().ids("tag2");
+            ids = store.getReader().ids("tag2");
             assertThat(ids, containsInAnyOrder("id2", "idboth"));
         }
     }
@@ -338,7 +344,10 @@ public class SqliteBlobStoreTest {
         Set<String> tags = tagsSet("tag1", "tag2");
         try (SqliteBlobStore store = new SqliteBlobStore(dbFile, tags)) {
             AtomicInteger counter = new AtomicInteger(0);
-            store.reader().forEach(Collections.emptyList(), tags, (id, blobs) -> counter.incrementAndGet());
+            store.getReader().forEach(Collections.emptyList(), tags, (id, blobs) -> {
+                counter.incrementAndGet();
+                return null;
+            });
             assertThat(counter.get(), equalTo(0));
         }
     }
@@ -347,7 +356,10 @@ public class SqliteBlobStoreTest {
     public void forEachWithEmptyTagsDoesNothing() throws BlobStoreException {
         try (SqliteBlobStore store = new SqliteBlobStore(dbFile, tagsSet("tag1", "tag2"))) {
             AtomicInteger counter = new AtomicInteger(0);
-            store.reader().forEach(Collections.singletonList("id"), Collections.emptySet(), (id, blobs) -> counter.incrementAndGet());
+            store.getReader().forEach(Collections.singletonList("id"), Collections.emptySet(), (id, blobs) -> {
+                counter.incrementAndGet();
+                return null;
+            });
             assertThat(counter.get(), equalTo(0));
         }
     }
@@ -358,7 +370,7 @@ public class SqliteBlobStoreTest {
         expect(() -> {
             try (SqliteBlobStore store = new SqliteBlobStore(dbFile, Collections.singleton(tag))) {
                 byte[] bytes = bytes(1);
-                store.writer().write("a", "unknown", bytes);
+                store.getWriter().write("a", "unknown", bytes);
             }
         }).toThrow(IllegalArgumentException.class);
     }
@@ -369,7 +381,7 @@ public class SqliteBlobStoreTest {
         expect(() -> {
             try (SqliteBlobStore store = new SqliteBlobStore(dbFile, Collections.singleton(tag))) {
                 byte[] bytes = bytes(1);
-                store.writer().update("a", "unknown", bytes);
+                store.getWriter().update("a", "unknown", bytes);
             }
         }).toThrow(IllegalArgumentException.class);
     }
@@ -380,8 +392,8 @@ public class SqliteBlobStoreTest {
         expect(() -> {
             try (SqliteBlobStore store = new SqliteBlobStore(dbFile, Collections.singleton(tag))) {
                 byte[] bytes = bytes(1);
-                store.writer().write("a", tag, bytes);
-                store.writer().delete("a", "unknown");
+                store.getWriter().write("a", tag, bytes);
+                store.getWriter().delete("a", "unknown");
             }
         }).toThrow(IllegalArgumentException.class);
     }
@@ -390,8 +402,7 @@ public class SqliteBlobStoreTest {
     public void forEachFailsWithUnknownKey() {
         expect(() -> {
             try (SqliteBlobStore store = new SqliteBlobStore(dbFile, tagsSet("tag"))) {
-                store.reader().forEach(Collections.singleton("a"), "unknown", ((id, tag, bytes) -> {
-                }));
+                store.getReader().forEach(Collections.singleton("a"), "unknown", ((id, tag, bytes) -> null));
             }
         }).toThrow(BlobStoreException.class);
     }
@@ -400,8 +411,7 @@ public class SqliteBlobStoreTest {
     public void forAllManyFailsWithUnknownKey() {
         expect(() -> {
             try (SqliteBlobStore store = new SqliteBlobStore(dbFile, tagsSet("tag"))) {
-                store.reader().forAll("unknown", ((id, tag, bytes) -> {
-                }));
+                store.getReader().forAll("unknown", ((id, tag, bytes) -> null));
             }
         }).toThrow(BlobStoreException.class);
     }
@@ -410,8 +420,7 @@ public class SqliteBlobStoreTest {
     public void handlesLargestSqliteParamCountQuery() throws Exception {
         Set<String> ids = IntStream.range(0, SqliteBlobReader.MAX_PARAM_IDS_IN_QUERY + 1).mapToObj(Integer::toString).collect(toSet());
         try (SqliteBlobStore store = new SqliteBlobStore(dbFile, tagsSet("tag"))) {
-            store.reader().forEach(ids, "tag", ((id, tag, bytes) -> {
-            }));
+            store.getReader().forEach(ids, "tag", ((id, tag, bytes) -> null));
         }
     }
 

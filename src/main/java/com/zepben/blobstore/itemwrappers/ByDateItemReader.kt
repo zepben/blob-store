@@ -91,7 +91,6 @@ class ByDateItemReader<T>(
                 }
             } catch (e: DeserialiseException) {
                 onError.handle(id, date, e.message, e)
-                onError.handle(id, date, e.message, e)
             }
         }
 
@@ -102,7 +101,7 @@ class ByDateItemReader<T>(
             }
         }
 
-    private fun <R> deserialiseTag(id: String, date: LocalDate, tag: String, blob: ByteArray, onError: ByDateItemError): R? {
+    private fun <R> deserialiseTag(id: String, date: LocalDate, tag: String, blob: ByteArray?, onError: ByDateItemError): R? {
         return try {
             val deserialiser = tagDeserialisers[tag] ?: return null
             @Suppress("UNCHECKED_CAST")

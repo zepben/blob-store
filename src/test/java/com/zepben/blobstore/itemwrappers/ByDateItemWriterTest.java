@@ -10,6 +10,8 @@ package com.zepben.blobstore.itemwrappers;
 
 import com.zepben.blobstore.BlobStoreException;
 import com.zepben.blobstore.BlobWriter;
+import kotlin.Unit;
+import kotlin.jvm.functions.Function2;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -19,7 +21,6 @@ import org.mockito.MockitoAnnotations;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.function.BiConsumer;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -30,7 +31,7 @@ public class ByDateItemWriterTest {
 
     @Mock private BlobWriter blobWriter;
     @Mock private ByDateBlobWriterProvider blobWriterProvider;
-    @Mock private BiConsumer<ItemBlobWriter, Object> writeHandler;
+    @Mock private Function2<ItemBlobWriter, Object, Unit> writeHandler;
     @Mock private ByDateItemError itemError;
 
     @Captor private ArgumentCaptor<ItemBlobWriter> itemBlobWriterCaptor;
@@ -57,10 +58,10 @@ public class ByDateItemWriterTest {
 
         assertTrue(itemWriter.write("id", LocalDate.now(), item, writeHandler, itemError));
         verify(blobWriterProvider).getWriter(LocalDate.now(), timeZone);
-        verify(writeHandler).accept(itemBlobWriterCaptor.capture(), objectCaptor.capture());
+        verify(writeHandler).invoke(itemBlobWriterCaptor.capture(), objectCaptor.capture());
         assertThat(objectCaptor.getValue(), is(item));
-        assertThat(itemBlobWriterCaptor.getValue().id, is(id));
-        assertThat(itemBlobWriterCaptor.getValue().date, is(date));
+        assertThat(itemBlobWriterCaptor.getValue().getId(), is(id));
+        assertThat(itemBlobWriterCaptor.getValue().getDate(), is(date));
     }
 
     @Test
@@ -71,7 +72,7 @@ public class ByDateItemWriterTest {
         Object item = new Object();
         itemWriter.write("errorId", LocalDate.now(), item, writeHandler, itemError);
         verify(itemError).handle(eq("errorId"), eq(LocalDate.now()), anyString(), eq(ex));
-        verify(writeHandler, never()).accept(any(), any());
+        verify(writeHandler, never()).invoke(any(), any());
     }
 
     @Test

@@ -215,7 +215,7 @@ class SqliteBlobWriter(
 
     private inner class PreparedStatementCache(private val statementSql: String) {
 
-        private val statements: MutableMap<String, PreparedStatement> = HashMap()
+        private val statements = mutableMapOf<String, PreparedStatement>()
 
         @Throws(SQLException::class)
         fun getStatement(tag: String): PreparedStatement =

@@ -17,7 +17,7 @@ class ByDateItemWriter(
     private val writerProvider: ByDateBlobWriterProvider
 ) {
 
-    private var writeCache: MutableMap<LocalDate, BlobWriter> = HashMap()
+    private var writeCache = mutableMapOf<LocalDate, BlobWriter>()
 
     fun <R> write(id: String, date: LocalDate, item: R, writeHandler: (ItemBlobWriter, R) -> Unit, onError: ByDateItemError): Boolean {
         try {

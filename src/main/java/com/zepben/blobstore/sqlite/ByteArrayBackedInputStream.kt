@@ -12,7 +12,7 @@ import java.io.InputStream
 /**
  * Allows a ByteBuffer to be used as an InputStream
  */
-class ByteArrayBackedInputStream(
+class ByteArrayBackedInputStream @JvmOverloads constructor(
     private val buffer: ByteArray,
     private var pos: Int = 0,
     length: Int = buffer.size - pos

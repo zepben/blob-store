@@ -20,6 +20,7 @@ class ItemBlobWriter(
 
     private var allGood = true
 
+    @JvmOverloads
     fun write(tag: String, bytes: ByteArray, offset: Int = 0, length: Int = bytes.size - offset): Boolean =
         tryOperation("write") {
             // Attempt to do an update first.
@@ -35,6 +36,7 @@ class ItemBlobWriter(
     fun delete(tag: String): Boolean =
         tryOperation("delete") {
             writer.delete(id, tag)
+            true
         }
 
     fun anyFailed(): Boolean {

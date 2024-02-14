@@ -8,7 +8,6 @@
 
 package com.zepben.blobstore.itemwrappers;
 
-import com.zepben.blobstore.BlobReader;
 import com.zepben.blobstore.BlobStoreException;
 import com.zepben.blobstore.WhereBlob;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,7 +50,7 @@ public class ByDateItemReaderTest {
 
         doReturn(blobReader).when(blobReaderProvider).getReader(any(), any());
 
-        Map<String, ByDateTagDeserialiser> tagDeserialisers = new HashMap<>();
+        Map<String, ByDateTagDeserialiser<?>> tagDeserialisers = new HashMap<>();
         tagDeserialisers.put("tag1", tag1Deserialiser);
         tagDeserialisers.put("tag2", tag2Deserialiser);
         itemReader = new ByDateItemReader<>(timeZone, blobReaderProvider);
@@ -89,7 +88,7 @@ public class ByDateItemReaderTest {
 
         doReturn("theItem").when(itemDeserialiser).deserialise(any(), any(), any());
         itemReader.forEach(ids, date, itemHandler, itemError);
-        verify(blobReader).forEach(eq(ids), eq(tags), any(BlobReader.TagsHandler.class));
+        verify(blobReader).forEach(eq(ids), eq(tags), any());
 
         verify(blobReaderProvider).getReader(date, timeZone);
         ArgumentMatcher<Map<String, byte[]>> matchesMap = eqArrayValueMap(blobReader.getBlobs(tags));
@@ -114,7 +113,7 @@ public class ByDateItemReaderTest {
         doReturn("theItem1").when(itemDeserialiser).deserialise(eq("id1"), any(), any());
         doReturn("theItem2").when(itemDeserialiser).deserialise(eq("id2"), any(), any());
         itemReader.forAll(date, itemHandler, itemError);
-        verify(blobReader).forAll(eq(tags), any(BlobReader.TagsHandler.class));
+        verify(blobReader).forAll(eq(tags), any());
 
         verify(blobReaderProvider).getReader(date, timeZone);
         ArgumentMatcher<Map<String, byte[]>> matchesMap = eqArrayValueMap(blobReader.getBlobs(tags));
@@ -127,11 +126,11 @@ public class ByDateItemReaderTest {
     @Test
     public void forAllWhere() throws Exception {
         LocalDate date = LocalDate.now();
-        List<WhereBlob> whereBlobs = Collections.singletonList(WhereBlob.equals("tag1", new byte[]{}));
+        List<WhereBlob> whereBlobs = Collections.singletonList(WhereBlob.Companion.equals("tag1", new byte[]{}));
 
         doReturn("theItem").when(itemDeserialiser).deserialise(any(), any(), any());
         itemReader.forAll(date, whereBlobs, itemHandler, itemError);
-        verify(blobReader).forAll(eq(tags), eq(whereBlobs), any(BlobReader.TagsHandler.class));
+        verify(blobReader).forAll(eq(tags), eq(whereBlobs), any());
 
         verify(blobReaderProvider).getReader(date, timeZone);
         ArgumentMatcher<Map<String, byte[]>> matchesMap = eqArrayValueMap(blobReader.getBlobs(tags));
@@ -154,8 +153,8 @@ public class ByDateItemReaderTest {
         LocalDate date = LocalDate.now();
 
         BlobStoreException ex = new BlobStoreException("test", null);
-        doThrow(ex).when(blobReader).forEach(anyCollection(), anySet(), any());
-        doThrow(ex).when(blobReader).forAll(anySet(), any());
+        doAnswer(inv -> {throw ex;}).when(blobReader).forEach(anyCollection(), anySet(), any());
+        doAnswer(inv -> {throw ex;}).when(blobReader).forAll(anySet(), any());
 
         itemReader.forEach(ids, date, itemHandler, itemError);
         itemReader.forAll(date, itemHandler, itemError);
@@ -263,7 +262,7 @@ public class ByDateItemReaderTest {
         String id = "id1";
         LocalDate date = LocalDate.now();
 
-        DeserialiseException ex = new DeserialiseException("test");
+        DeserialiseException ex = new DeserialiseException("test", null);
         doThrow(ex).when(itemDeserialiser).deserialise(any(), any(), any());
         String str = itemReader.get(id, date, itemError);
         assertNull(str);
@@ -275,7 +274,7 @@ public class ByDateItemReaderTest {
         String id = "id1";
         LocalDate date = LocalDate.now();
 
-        DeserialiseException ex = new DeserialiseException("test");
+        DeserialiseException ex = new DeserialiseException("test", null);
         doThrow(ex).when(tag1Deserialiser).deserialise(any(), any(), any(), any());
         String str = itemReader.get(id, date, "tag1", itemError);
         assertNull(str);

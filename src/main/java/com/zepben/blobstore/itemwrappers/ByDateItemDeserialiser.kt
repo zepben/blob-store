@@ -12,6 +12,6 @@ import java.time.LocalDate
 fun interface ByDateItemDeserialiser<T> {
 
     @Throws(DeserialiseException::class)
-    fun deserialise(id: String, date: LocalDate, blobs: Map<String, ByteArray>): T?
+    fun deserialise(id: String, date: LocalDate, blobs: Map<String, ByteArray?>): T?
 
 }

@@ -19,17 +19,12 @@ import static org.hamcrest.core.IsEqual.equalTo;
 public class BytesUtilTest {
 
     @Test
-    public void isUtilityClass() throws ReflectiveOperationException {
-        assertUtilityClassWellDefined(BytesUtil.class);
-    }
-
-    @Test
     public void strings() {
         ByteBuffer buffer = ByteBuffer.allocate(128);
         String toEncode = "a string";
-        BytesUtil.putStringUtf8(buffer, toEncode);
+        BytesUtil.INSTANCE.putStringUtf8(buffer, toEncode);
         buffer.flip();
-        String decoded = BytesUtil.getStringUtf8(buffer);
+        String decoded = BytesUtil.INSTANCE.getStringUtf8(buffer);
         assertThat(decoded, equalTo(toEncode));
     }
 
@@ -37,9 +32,9 @@ public class BytesUtilTest {
     public void stringsDirectBuffer() {
         ByteBuffer buffer = ByteBuffer.allocateDirect(128);
         String toEncode = "a string";
-        BytesUtil.putStringUtf8(buffer, toEncode);
+        BytesUtil.INSTANCE.putStringUtf8(buffer, toEncode);
         buffer.flip();
-        String decoded = BytesUtil.getStringUtf8(buffer);
+        String decoded = BytesUtil.INSTANCE.getStringUtf8(buffer);
         assertThat(decoded, equalTo(toEncode));
     }
 
@@ -47,9 +42,9 @@ public class BytesUtilTest {
     public void int7BitEncodePositive() {
         ByteBuffer buffer = ByteBuffer.allocate(128);
         int value = Integer.MAX_VALUE;
-        BytesUtil.encode7BitInt(buffer, value);
+        BytesUtil.INSTANCE.encode7BitInt(buffer, value);
         buffer.flip();
-        int decoded = BytesUtil.decode7BitInt(buffer);
+        int decoded = BytesUtil.INSTANCE.decode7BitInt(buffer);
         assertThat(decoded, equalTo(value));
     }
 
@@ -57,9 +52,9 @@ public class BytesUtilTest {
     public void int7BitEncodeNegative() {
         ByteBuffer buffer = ByteBuffer.allocate(128);
         int value = Integer.MIN_VALUE;
-        BytesUtil.encode7BitInt(buffer, value);
+        BytesUtil.INSTANCE.encode7BitInt(buffer, value);
         buffer.flip();
-        int decoded = BytesUtil.decode7BitInt(buffer);
+        int decoded = BytesUtil.INSTANCE.decode7BitInt(buffer);
         assertThat(decoded, equalTo(value));
     }
 
@@ -67,9 +62,9 @@ public class BytesUtilTest {
     public void long7BitEncodePositive() {
         ByteBuffer buffer = ByteBuffer.allocate(128);
         long value = Long.MAX_VALUE;
-        BytesUtil.encode7BitLong(buffer, value);
+        BytesUtil.INSTANCE.encode7BitLong(buffer, value);
         buffer.flip();
-        long decoded = BytesUtil.decode7BitLong(buffer);
+        long decoded = BytesUtil.INSTANCE.decode7BitLong(buffer);
         assertThat(decoded, equalTo(value));
     }
 
@@ -77,9 +72,9 @@ public class BytesUtilTest {
     public void long7BitEncodeNegative() {
         ByteBuffer buffer = ByteBuffer.allocate(128);
         long value = Long.MIN_VALUE;
-        BytesUtil.encode7BitLong(buffer, value);
+        BytesUtil.INSTANCE.encode7BitLong(buffer, value);
         buffer.flip();
-        long decoded = BytesUtil.decode7BitLong(buffer);
+        long decoded = BytesUtil.INSTANCE.decode7BitLong(buffer);
         assertThat(decoded, equalTo(value));
     }
 

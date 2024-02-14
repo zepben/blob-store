@@ -10,7 +10,7 @@ package com.zepben.blobstore.sqlite
 import java.sql.Connection
 import java.sql.SQLException
 
-internal class Metadata(
+class Metadata(
     private val getConnection: () -> Connection
 ) {
 

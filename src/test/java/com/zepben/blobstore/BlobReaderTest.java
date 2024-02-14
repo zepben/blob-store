@@ -10,9 +10,11 @@ package com.zepben.blobstore;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -20,57 +22,8 @@ import static org.hamcrest.Matchers.*;
 
 public class BlobReaderTest {
 
-        private BlobReader mockReader() {
-            return new BlobReader() {
-                @Override
-                public void ids(Consumer<String> idHandler) {
-                    idHandler.accept("id1");
-                    idHandler.accept("id2");
-                }
-
-                @Override
-                public void ids(String tag, Consumer<String> idHandler) {
-                    idHandler.accept("id1");
-                idHandler.accept("id2");
-            }
-
-            @Override
-            public void forEach(Collection<String> ids,
-                                Set<String> tags,
-                                TagsHandler handler) {
-                for (String id : ids) {
-                    Map<String, byte[]> blobs = new HashMap<>();
-                    for (String tag : tags)
-                        if (tag.equals("null"))
-                            blobs.put(tag, null);
-                        else
-                            blobs.put(tag, expectedBytes(id, tag));
-                    handler.handle(id, blobs);
-                }
-            }
-
-            @Override
-            public void forAll(Set<String> tags,
-                               List<WhereBlob> whereBlobs,
-                               TagsHandler handler) {
-                List<String> ids = Arrays.asList("id1", "id2");
-                for (String id : ids) {
-                    Map<String, byte[]> blobs = new HashMap<>();
-                    for (String tag : tags) {
-                        if (tag.equals("null"))
-                            blobs.put(tag, null);
-                        else
-                            blobs.put(tag, expectedBytes(id, tag));
-                    }
-
-                    handler.handle(id, blobs);
-                }
-            }
-
-            @Override
-            public void close() {
-            }
-        };
+    private BlobReader mockReader() {
+        return new SampleBlobReader();
     }
 
     private byte[] expectedBytes(String id, String tag) {
@@ -115,13 +68,17 @@ public class BlobReaderTest {
             assertThat(tag, equalTo("tag"));
             assertThat(id, anyOf(equalTo("id1"), equalTo("id2")));
             assertThat(item, equalTo(expectedBytes(id, tag)));
+            return null;
         });
     }
 
     @Test
     public void forEachNullTag() throws Exception {
         AtomicBoolean called = new AtomicBoolean(false);
-        mockReader().forEach(Collections.singleton("id"), "null", (id, tag, item) -> called.set(true));
+        mockReader().forEach(Collections.singleton("id"), "null", (id, tag, item) -> {
+            called.set(true);
+            return null;
+        });
         assertThat(called.get(), is(false));
     }
 
@@ -139,6 +96,7 @@ public class BlobReaderTest {
             assertThat(tag, equalTo("tag"));
             assertThat(id, anyOf(equalTo("id1"), equalTo("id2")));
             assertThat(item, equalTo(expectedBytes(id, tag)));
+            return null;
         }));
     }
 

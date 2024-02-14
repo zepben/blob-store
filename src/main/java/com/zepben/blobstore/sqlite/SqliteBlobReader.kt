@@ -120,7 +120,7 @@ class SqliteBlobReader(
     }
 
     private fun executeQuery(stmt: PreparedStatement, tags: Array<String>, handler: TagsHandler) {
-        val blobs: MutableMap<String, ByteArray> = HashMap(tags.size)
+        val blobs = mutableMapOf<String, ByteArray?>()
         val blobsView = Collections.unmodifiableMap(blobs)
 
         stmt.executeQuery().use { rs ->
