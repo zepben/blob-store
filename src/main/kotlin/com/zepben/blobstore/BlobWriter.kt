@@ -16,13 +16,6 @@ package com.zepben.blobstore
  */
 interface BlobWriter : AutoCloseable {
 
-    //todo remove
-    @Throws(BlobStoreException::class, BlobReadWriteException::class)
-    fun write(id: String, tag: String, buffer: ByteArray): Boolean = write(id, tag, buffer, 0, buffer.size)
-
-    @Throws(BlobStoreException::class, BlobReadWriteException::class)
-    fun update(id: String, tag: String, buffer: ByteArray): Boolean = update(id, tag, buffer, 0, buffer.size)
-
     /**
      * Write a blob associating it with a given tag.
      *
@@ -90,5 +83,17 @@ interface BlobWriter : AutoCloseable {
 
     @Throws(BlobStoreException::class)
     override fun close()
+
+    /**
+     * Java interop for [write]. Used by tests, and can be removed if the tests are ever converted to Kotlin.
+     */
+    @Throws(BlobStoreException::class, BlobReadWriteException::class)
+    fun write(id: String, tag: String, buffer: ByteArray): Boolean = write(id, tag, buffer, 0, buffer.size)
+
+    /**
+     * Java interop for [update]. Used by tests, and can be removed if the tests are ever converted to Kotlin.
+     */
+    @Throws(BlobStoreException::class, BlobReadWriteException::class)
+    fun update(id: String, tag: String, buffer: ByteArray): Boolean = update(id, tag, buffer, 0, buffer.size)
 
 }
