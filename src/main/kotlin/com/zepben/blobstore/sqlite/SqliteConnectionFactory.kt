@@ -19,13 +19,15 @@ class SqliteConnectionFactory(
 ) : ConnectionFactory {
 
     // Take a copy of the passed in tags.
-    private val tags = tags.toSet().onEach { require(supportedTableName(it)) { "unsupported tag: $it" } }
+    private val tags = tags.toSet().onEach {
+        require(it.isNotBlank()) { "tags must not be empty strings" }
+        require(supportedTableName(it)) { "unsupported tag: $it" }
+    }
 
     private fun supportedTableName(tag: String): Boolean =
         when (tag) {
             IdIndex.ID_INDEX_TABLE -> false
             VERSION_TABLE -> false
-            "" -> false
             else -> tag.all { Character.isLetterOrDigit(it) || (it == '_') }
         }
 
