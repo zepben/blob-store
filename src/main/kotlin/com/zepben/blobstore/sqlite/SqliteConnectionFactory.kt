@@ -25,7 +25,8 @@ class SqliteConnectionFactory(
         when (tag) {
             IdIndex.ID_INDEX_TABLE -> false
             VERSION_TABLE -> false
-            else -> tag.none { (!(Character.isLetterOrDigit(it) || it == '_')) }
+            "" -> false
+            else -> tag.all { Character.isLetterOrDigit(it) || (it == '_') }
         }
 
     @Throws(SQLException::class)

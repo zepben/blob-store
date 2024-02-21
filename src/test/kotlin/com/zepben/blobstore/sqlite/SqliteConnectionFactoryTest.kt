@@ -8,6 +8,7 @@
 package com.zepben.blobstore.sqlite
 
 import com.zepben.testutils.exception.ExpectException.Companion.expect
+import io.mockk.mockk
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.*
 import org.junit.jupiter.api.AfterEach
@@ -60,6 +61,21 @@ class SqliteConnectionFactoryTest {
             .toThrow<SQLException>()
             .withMessage("Failed to initialise sqlite database '$dbFile'")
             .withCause<SQLException>()
+    }
+
+    @Test
+    fun `can't use reserved names for tags`() {
+        expect { SqliteConnectionFactory(mockk(), setOf(IdIndex.ID_INDEX_TABLE)) }
+            .toThrow<IllegalArgumentException>()
+            .withMessage("unsupported tag: ${IdIndex.ID_INDEX_TABLE}")
+
+        expect { SqliteConnectionFactory(mockk(), setOf(SqliteConnectionFactory.VERSION_TABLE)) }
+            .toThrow<IllegalArgumentException>()
+            .withMessage("unsupported tag: ${SqliteConnectionFactory.VERSION_TABLE}")
+
+        expect { SqliteConnectionFactory(mockk(), setOf("")) }
+            .toThrow<IllegalArgumentException>()
+            .withMessage("tags must not be empty strings")
     }
 
 }
