@@ -4,6 +4,8 @@
 
 ### Breaking Changes
 * Updated the super pom with potentially breaking transitive dependencies.
+* Converted to codebase to Kotlin, which will change the names of several accessors if interfacing from Java.
+* Converted several functional interfaces to Kotlin `typealias` directives, which will impact Java use.
 
 ### New Features
 * None.
@@ -12,7 +14,8 @@
 * None.
 
 ### Fixes
-* None.
+
+* Fixed several resource leaks when checking the schema of the blob store.
 
 ### Notes
 * None.
