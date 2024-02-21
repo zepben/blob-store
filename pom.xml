@@ -9,7 +9,7 @@
 
     <groupId>com.zepben</groupId>
     <artifactId>blob-store</artifactId>
-    <version>2.0.0-SNAPSHOT2</version>
+    <version>2.0.0</version>
     <packaging>jar</packaging>
 
     <name>${project.groupId}:${project.artifactId}</name>
@@ -77,7 +77,7 @@
         <dependency>
             <groupId>com.zepben</groupId>
             <artifactId>test-utils</artifactId>
-            <version>2.0.0-SNAPSHOT1</version>
+            <version>2.0.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
