@@ -8,7 +8,6 @@
 package com.zepben.blobstore.itemwrappers
 
 import com.zepben.blobstore.BlobReader
-import com.zepben.blobstore.BlobStoreException
 import com.zepben.blobstore.WhereBlob
 
 class MockBlobReader(private val ids: Set<String>, private val tags: Set<String>) : BlobReader {
@@ -25,21 +24,18 @@ class MockBlobReader(private val ids: Set<String>, private val tags: Set<String>
         return bytes
     }
 
-    @Throws(BlobStoreException::class)
     override fun ids(idHandler: Function1<String, Unit>) {
         for (id in ids) {
             idHandler.invoke(id)
         }
     }
 
-    @Throws(BlobStoreException::class)
     override fun ids(tag: String, idHandler: Function1<String, Unit>) {
         for (id in ids) {
             idHandler.invoke(id)
         }
     }
 
-    @Throws(BlobStoreException::class)
     override fun forEach(ids: Collection<String>, tags: Set<String>, handler: Function2<String, Map<String, ByteArray?>, Unit>) {
         for (id in ids) {
             if (ids.contains(id)) {
@@ -49,7 +45,6 @@ class MockBlobReader(private val ids: Set<String>, private val tags: Set<String>
         }
     }
 
-    @Throws(BlobStoreException::class)
     override fun forAll(tags: Set<String>, whereBlobs: List<WhereBlob>, handler: Function2<String, Map<String, ByteArray?>, Unit>) {
         for (id in ids) {
             val bytes = getBlobs(tags)
