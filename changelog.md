@@ -1,6 +1,6 @@
 # Release History
 
-## [1.4.0] - UNRELEASED
+## [2.0.0] - UNRELEASED
 
 ### Breaking Changes
 * Updated the super pom with potentially breaking transitive dependencies.
